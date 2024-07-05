@@ -1,0 +1,10 @@
+[submodule "src/solo12_interface"]
+	path = src/solo12_interface
+	url = git@github.com:ddebenedittis/solo12_interface.git
+[submodule "src/ff_commands_publisher"]
+	path = src/ff_commands_publisher
+	url = git@github.com:ddebenedittis/ff_commands_publisher.git
+[submodule "src/solo_description"]
+	path = src/solo_description
+	url = git@github.com:ddebenedittis/solo_description.git
+	branch = no_depend
