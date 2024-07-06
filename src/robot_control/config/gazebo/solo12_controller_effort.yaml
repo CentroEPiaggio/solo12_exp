@@ -1,0 +1,111 @@
+controller_manager:
+    ros__parameters:
+        use_sim_time: true
+
+        update_rate: 1000
+
+        joint_state_broadcaster:
+            type: joint_state_broadcaster/JointStateBroadcaster
+
+        pd_controller:
+            type: pd_controller/PDController
+
+
+joint_state_broadcaster:
+    ros__parameters:
+        joints:
+            - FL_HAA
+            - FL_HFE
+            - FL_KFE
+            - FR_HAA
+            - FR_HFE
+            - FR_KFE
+            - HL_HAA
+            - HL_HFE
+            - HL_KFE
+            - HR_HAA
+            - HR_HFE
+            - HR_KFE
+        interfaces:
+            - position
+            - velocity
+            - effort
+
+
+pd_controller:
+    ros__parameters:
+        use_sim_time: true
+
+        joint_names:
+            - FL_HAA
+            - FL_HFE
+            - FL_KFE
+            - FR_HAA
+            - FR_HFE
+            - FR_KFE
+            - HL_HAA
+            - HL_HFE
+            - HL_KFE
+            - HR_HAA
+            - HR_HFE
+            - HR_KFE
+
+        initialization_time: 0.0
+        initialization_phases:
+            - 0.5
+            - 0.5
+
+        q1:
+            - 0.
+            - 0.
+            - 0.
+            - 0.
+            - 0.
+            - 0.
+            - 0.
+            - 0.
+            - 0.
+            - 0.
+            - 0.
+            - 0.
+
+        q2:
+            - 0.
+            - 0.
+            - 0.
+            - 0.
+            - 0.
+            - 0.
+            - 0.
+            - 0.
+            - 0.
+            - 0.
+            - 0.
+            - 0.
+
+        PD_proportional:
+            - 20.
+            - 20.
+            - 20.
+            - 20.
+            - 20.
+            - 20.
+            - 20.
+            - 20.
+            - 20.
+            - 20.
+            - 20.
+            - 20.
+        PD_derivative:
+            - 0.5
+            - 0.5
+            - 0.5
+            - 0.5
+            - 0.5
+            - 0.5
+            - 0.5
+            - 0.5
+            - 0.5
+            - 0.5
+            - 0.5
+            - 0.5

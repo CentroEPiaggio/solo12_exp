@@ -44,14 +44,22 @@ ros2 bag record --use_sim_time /joint_states
 ```
 
 - Inspect the bag file (plots the joint positions, velocities, and efforts):
-```shell
-ros2 run ff_commands_publisher bag_inspector
-```
+    ```shell
+    ros2 run ff_commands_publisher bag_inspector
+    ```
 - Publish and visualize in RViz SOLO12 motion:
-```shell
-ros2 launch ff_commands_publisher visualize_solo.launch.py ["bag_filename:='<filename>'"] [rate:=<num>] [use_sim_time:=<true|false>] 
-```
+    ```shell
+    ros2 launch ff_commands_publisher visualize_solo.launch.py ["bag_filename:='<filename>'"] [rate:=<num>] [use_sim_time:=<true|false>]
+    ```
+    The "<param_name>:='<param_value>'" is only required when the given filename is a number (e.g. 020) since we want it to be treated as a string.
 - Publish the bag JointState messages in the topic `/joint_states`:
+    ```shell
+    ros2 launch ff_commands_publisher ff_commands_publisher_node.launch.py ["bag_filename:='<filename>'"]
+    ```
+
+### Feed-Forward Trajectory Simulation
+
+Simulate the feed-forward trajectory in Gazebo with
 ```shell
-ros2 launch ff_commands_publisher ff_commands_publisher_node.launch.py ["bag_filename:='<filename>'"]
+ros2 launch robot_gazebo solo12.launch.py ["bag_filename:='<filename>'"]
 ```

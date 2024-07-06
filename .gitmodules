@@ -7,4 +7,4 @@
 [submodule "src/solo_description"]
 	path = src/solo_description
 	url = git@github.com:ddebenedittis/solo_description.git
-	branch = no_depend
+	branch = no_comments
