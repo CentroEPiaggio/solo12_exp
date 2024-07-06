@@ -109,3 +109,6 @@ pd_controller:
             - 0.5
             - 0.5
             - 0.5
+
+        use_torques: false
+        use_velocities: false

@@ -46,6 +46,9 @@ CallbackReturn PDController::on_init()
 
         auto_declare<std::vector<double>>("PD_proportional", {});
         auto_declare<std::vector<double>>("PD_derivative", {});
+
+        auto_declare<bool>("use_torques", bool());
+        auto_declare<bool>("use_velocities", bool());
     }
     catch(const std::exception& e) {
         fprintf(stderr,"Exception thrown during init stage with message: %s \n", e.what());
@@ -149,12 +152,21 @@ CallbackReturn PDController::on_configure(const rclcpp_lifecycle::State& /*previ
         return CallbackReturn::ERROR;
     }
 
+    use_torques_ = get_node()->get_parameter("use_torques").as_bool();
+
+    use_velocities_ = get_node()->get_parameter("use_velocities").as_bool();
+
     /* ============================= Subscribers ============================ */
 
     joint_states_subscription_ = get_node()->create_subscription<sensor_msgs::msg::JointState>(
         "/PD_control/command", QUEUE_SIZE,
         [this](const sensor_msgs::msg::JointState::SharedPtr msg) -> void
         {
+            if (qj_ref_.size() != joint_names_.size()) {
+                RCLCPP_ERROR(this->get_node()->get_logger(),
+                    "The joint names have a different size than what is expected.");
+            }
+
             for (int i = 0; i < static_cast<int>(joint_names_.size()); i++) {
                 auto it = std::find(msg->name.begin(), msg->name.end(), joint_names_[i]);
                 qj_ref_[i] = msg->position[it - msg->name.begin()];
@@ -215,9 +227,9 @@ controller_interface::return_type PDController::update(
         // PD for the state estimator initialization
         for (uint i=0; i<joint_names_.size(); i++) {
             command_interfaces_[i].set_value(
-                + PD_proportional_[i] * (qj_ref[i] - qj_(i))
-                + PD_derivative_[i] * (- vj_(i))
-                + tau_ref_[i]
+                + PD_proportional_[i] * (qj_ref_[i] - qj_(i))
+                + ((use_velocities_) ? PD_derivative_[i] * (vj_ref_[i] - vj_(i)) : PD_derivative_[i] * (- vj_(i)))
+                + ((use_torques_) ? tau_ref_[i] : 0)
             );
         }
     } else {
@@ -225,8 +237,8 @@ controller_interface::return_type PDController::update(
         for (uint i=0; i<joint_names_.size(); i++) {
             command_interfaces_[i].set_value(
                 + PD_proportional_[i] * (qj_ref_[i] - qj_(i))
-                + PD_derivative_[i] * (- vj_(i))
-                + tau_ref_[i]
+                + ((use_velocities_) ? PD_derivative_[i] * (vj_ref_[i] - vj_(i)) : PD_derivative_[i] * (- vj_(i)))
+                + ((use_torques_) ? tau_ref_[i] : 0)
             );
         }
     }

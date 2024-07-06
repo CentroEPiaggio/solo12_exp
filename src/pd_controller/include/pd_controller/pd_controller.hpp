@@ -64,6 +64,9 @@ private:
 
     std::vector<double> PD_proportional_;
     std::vector<double> PD_derivative_;
+
+    bool use_torques_ = true;
+    bool use_velocities_ = true;
 };
 
 } // namespace pd_controller
