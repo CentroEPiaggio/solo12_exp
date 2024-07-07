@@ -2,9 +2,9 @@
 
 ## Installation
 
-Either use Docker or copy the `src` directory in your ROS 2 workspace. The repo has been tested in ROS 2 humble.
+Either use Docker or copy the `src` directory in your ROS 2 workspace. The repo has been tested in ROS 2 Humble.
 
-To use the Docker installation, follow the Preliminaries instructions [here](https://github.com/ddebenedittis/docker_ros_nvidia?tab=readme-ov-file#preliminaries). Afterward, build (once) and run the Docker image with the following commands:
+To use the Docker installation, follow the Preliminaries instructions [here](https://github.com/ddebenedittis/docker_ros_nvidia?tab=readme-ov-file#preliminaries). Afterward, build the image (once) and run the Docker image with the following commands:
 - Build:
     ```shell
     ./build.bash [-r]
@@ -13,6 +13,11 @@ To use the Docker installation, follow the Preliminaries instructions [here](htt
     ```shell
     ./run.bash
     ```
+
+After having entered the workspace, you need to build the packages. The following command is recommended:
+```shell
+colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release -DCMAKE_EXPORT_COMPILE_COMMANDS=ON && source install/setup.bash
+```
 
 ## Usage
 
@@ -36,7 +41,7 @@ To launch the SOLO12 interface:
 
 This package publishes the robot's commands as a feed-forward control signal.
 To use it, record your bag files and put them in `src/ff_commands_publisher/bags/`.
-More detailed instructions are in the package's README.
+More detailed instructions are in the package's [README]((src/ff_commands_publisher/README.md)).
 
 The bags should be recorded with
 ```shell
