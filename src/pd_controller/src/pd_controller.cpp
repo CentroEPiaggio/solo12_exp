@@ -37,8 +37,8 @@ CallbackReturn PDController::on_init()
 
         auto_declare<std::vector<std::string>>("joint_names", std::vector<std::string>());
 
-        auto_declare<double>("initialization_time", double());
-        auto_declare<std::vector<double>>("initialization_phases", {1.});
+        auto_declare<double>("initialization_time_1", double());
+        auto_declare<double>("initialization_time_2", double());
 
         auto_declare<std::vector<double>>("q0", {});
         auto_declare<std::vector<double>>("q1", std::vector<double>());
@@ -98,8 +98,17 @@ CallbackReturn PDController::on_configure(const rclcpp_lifecycle::State& /*previ
         return CallbackReturn::ERROR;
     }
 
-    init_time_ = get_node()->get_parameter("initialization_time").as_double();
-    init_phases_ = get_node()->get_parameter("initialization_phases").as_double_array();
+    init_time_1_ = get_node()->get_parameter("initialization_time_1").as_double();
+    if (init_time_1_ < 0) {
+        RCLCPP_ERROR(get_node()->get_logger(),"'initialization_time_1' is negative.");
+        return CallbackReturn::ERROR;
+    }
+
+    init_time_2_ = get_node()->get_parameter("initialization_time_2").as_double();
+    if (init_time_2_ < 0) {
+        RCLCPP_ERROR(get_node()->get_logger(),"'initialization_time_2' is negative.");
+        return CallbackReturn::ERROR;
+    }
 
 
     /* ====================================================================== */
@@ -133,7 +142,7 @@ CallbackReturn PDController::on_configure(const rclcpp_lifecycle::State& /*previ
     if (static_cast<int>(q2.size()) == 0) {
         q2 = std::vector<double>(nj, 0.0);
     } else if (static_cast<int>(q2.size()) != nj
-        && init_phases_.size() > 1) {
+        && init_time_2_ > 0) {
         RCLCPP_ERROR(get_node()->get_logger(),"'q2' does not have nj elements");
         return CallbackReturn::ERROR;
     }
@@ -141,13 +150,17 @@ CallbackReturn PDController::on_configure(const rclcpp_lifecycle::State& /*previ
 
 
     PD_proportional_ = get_node()->get_parameter("PD_proportional").as_double_array();
-    if (static_cast<int>(PD_proportional_.size()) != nj) {
+    if (static_cast<int>(PD_proportional_.size()) == 1) {
+        PD_proportional_ = std::vector<double>(joint_names_.size(), PD_proportional_[0]);
+    } else if (static_cast<int>(PD_proportional_.size()) != nj) {
         RCLCPP_ERROR(get_node()->get_logger(),"'PD_proportional' does not have nj elements");
         return CallbackReturn::ERROR;
     }
 
     PD_derivative_ = get_node()->get_parameter("PD_derivative").as_double_array();
-    if (static_cast<int>(PD_derivative_.size()) != nj) {
+    if (static_cast<int>(PD_derivative_.size()) == 1) {
+        PD_derivative_ = std::vector<double>(joint_names_.size(), PD_derivative_[0]);
+    } else if (static_cast<int>(PD_derivative_.size()) != nj) {
         RCLCPP_ERROR(get_node()->get_logger(),"'PD_derivative' does not have nj elements");
         return CallbackReturn::ERROR;
     }
@@ -206,34 +219,30 @@ controller_interface::return_type PDController::update(
         vj_(i) = state_interfaces_[2*i+1].get_value();
     }
 
-    if (time.seconds() <= init_time_ || qj_ref_.size() == 0) {
-        // The planner is not publishing messages yet. Interpolate from q0 to qi and than wait.
+    if (time.seconds() <= init_time_1_ + init_time_2_ || qj_ref_.size() == 0) {
+        // Interpolate from q0 to q1 and q2. Then, wait until some references are given.
 
         Eigen::VectorXd qj_ref;
-        if (static_cast<int>(init_phases_.size()) < 2) {
-            qj_ref = q0_ + std::min(1., time.seconds() / init_time_) * (q1_ - q0_);
+        if (init_time_1_ == 0) {
+            qj_ref = q0_;
+        } else if (time.seconds() < init_time_1_) {
+            qj_ref = q0_ + time.seconds() / init_time_1_ * (q1_ - q0_);
+        } else if (init_time_2_ == 0) {
+            qj_ref = q1_;
+        } else if (time.seconds() < init_time_1_ + init_time_2_) {
+            qj_ref = q1_ + (time.seconds() - init_time_1_) / init_time_2_ * (q2_ - q1_);
         } else {
-            if (time.seconds() / init_time_ < init_phases_[0]) {
-                double phi = time.seconds() / (init_time_ * init_phases_[0]);
-                qj_ref = q0_ + phi * (q1_ - q0_);
-            } else if ((time.seconds() - init_time_ * init_phases_[0]) / init_time_ < init_phases_[1]) {
-                double phi = (time.seconds() - init_time_ * init_phases_[0]) / (init_time_ * init_phases_[1]);
-                qj_ref = q1_ + phi * (q2_ - q1_);
-            } else {
-                qj_ref = q2_;
-            }
+            qj_ref = q2_;
         }
 
-        // PD for the state estimator initialization
+        // PD during the initialization phase.
         for (uint i=0; i<joint_names_.size(); i++) {
             command_interfaces_[i].set_value(
                 + PD_proportional_[i] * (qj_ref_[i] - qj_(i))
-                + ((use_velocities_) ? PD_derivative_[i] * (vj_ref_[i] - vj_(i)) : PD_derivative_[i] * (- vj_(i)))
-                + ((use_torques_) ? tau_ref_[i] : 0)
+                + PD_derivative_[i] * (- vj_(i))
             );
         }
     } else {
-        // PD for the state estimator initialization
         for (uint i=0; i<joint_names_.size(); i++) {
             command_interfaces_[i].set_value(
                 + PD_proportional_[i] * (qj_ref_[i] - qj_(i))

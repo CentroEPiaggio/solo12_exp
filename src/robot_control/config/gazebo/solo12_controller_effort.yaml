@@ -50,10 +50,10 @@ pd_controller:
             - HR_HFE
             - HR_KFE
 
-        initialization_time: 0.0
-        initialization_phases:
-            - 0.5
-            - 0.5
+        # The joint position can be interpolated from q0 to q1 in initialization_time_1
+        initialization_time_1: 0.0
+        # and from q1 to q2 in initialization_time_2.
+        initialization_time_2: 0.0
 
         q1:
             - 0.
@@ -83,6 +83,7 @@ pd_controller:
             - 0.
             - 0.
 
+        # PD gain for the joints. Must have dimension 1 or n_joints.
         PD_proportional:
             - 20.
             - 20.
@@ -96,6 +97,7 @@ pd_controller:
             - 20.
             - 20.
             - 20.
+        # PD gain for the joints. Must have dimension 1 or n_joints.
         PD_derivative:
             - 0.5
             - 0.5
@@ -110,5 +112,7 @@ pd_controller:
             - 0.5
             - 0.5
 
+        # When false, the feed-forward torques term is not used.
         use_torques: false
+        # When false, the derivative contribution is: PD_derivative * (- q_dot_meas).
         use_velocities: false

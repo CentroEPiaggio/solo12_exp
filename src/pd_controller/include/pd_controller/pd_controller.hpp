@@ -47,17 +47,16 @@ private:
 
     std::vector<std::string> joint_names_;
 
-    Eigen::VectorXd qj_;
-    Eigen::VectorXd vj_;
+    Eigen::VectorXd qj_;    ///< @brief Measured joint positions.
+    Eigen::VectorXd vj_;    ///< @brief Measured joint velocities.
 
-    std::vector<double> qj_ref_;
-    std::vector<double> vj_ref_;
-    std::vector<double> tau_ref_;
+    std::vector<double> qj_ref_;    ///< @brief Reference joint positions.
+    std::vector<double> vj_ref_;    ///< @brief Reference joint velocities.
+    std::vector<double> tau_ref_;   ///< @brief Feed-forward joint torques.
 
-    /// @brief Initialization time to give the state estimator some time to get better estimates. During this time, a PD controller is used to keep the robot in q0 and the planner is paused.
-    double init_time_ = 1;
-    std::vector<double> init_phases_ = {1};
-
+    double init_time_1_ = 1;    ///< @brief Initialization time from q0 to q1.
+    double init_time_2_ = 1;    ///< @brief Initialization time from q1 to q2.
+    
     Eigen::VectorXd q0_;
     Eigen::VectorXd q1_;
     Eigen::VectorXd q2_;
@@ -65,8 +64,9 @@ private:
     std::vector<double> PD_proportional_;
     std::vector<double> PD_derivative_;
 
-    bool use_torques_ = true;
-    bool use_velocities_ = true;
+
+    bool use_torques_ = true;       ///< @brief When false, the feed-forward torques term is not used.
+    bool use_velocities_ = true;    ///< @brief When false, the derivative contribution is: PD_derivative * (- q_dot_meas).
 };
 
 } // namespace pd_controller
