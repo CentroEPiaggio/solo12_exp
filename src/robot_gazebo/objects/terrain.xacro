@@ -86,4 +86,10 @@
             <kd>100</kd>
         </gazebo>
     </xacro:if>
+
+    <gazebo reference="ground_plane_link">
+        <mu1>0.5</mu1>
+        <mu2>0.5</mu2>
+    </gazebo>
+    
 </robot>
