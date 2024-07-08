@@ -1,6 +1,7 @@
 __pycache__/
 .cache/
 .vscode/
+bags/
 build/
 install/
 log/

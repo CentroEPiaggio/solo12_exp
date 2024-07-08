@@ -34,7 +34,11 @@ To launch the SOLO12 interface:
 3. Afterwards, source the ROS 2 workspace and launch the interface:
     ```shell
     source install/setup.bash
-    ros2 launch solo12_sim real_leg_interface.launch.py
+    ros2 launch solo12_sim interface.launch.py
+    ```
+4. To launch the interface and the controllers together, use
+    ```shell
+    ros2 launch solo12_sim interface_and_control.launch.py
     ```
 
 ### Feed-Forward Commands Publisher
