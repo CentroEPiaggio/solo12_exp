@@ -62,6 +62,8 @@ RUN --mount=type=cache,sharing=locked,target=/var/cache/apt --mount=type=cache,s
     ros-${ROS_DISTRO}-ros2-control \
     ros-${ROS_DISTRO}-ros2-controllers \
     ros-${ROS_DISTRO}-rosbag2-storage-mcap \
+    ros-${ROS_DISTRO}-qt-gui-cpp \
+    ros-${ROS_DISTRO}-rqt-gui-cpp \
     ros-${ROS_DISTRO}-rviz2 \
     ros-${ROS_DISTRO}-plotjuggler-ros \
     ros-${ROS_DISTRO}-xacro \

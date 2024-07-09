@@ -8,3 +8,6 @@
 	path = src/solo_description
 	url = git@github.com:ddebenedittis/solo_description.git
 	branch = no_comments
+[submodule "src/mocap4ros2_qualisys"]
+	path = src/mocap4ros2_qualisys
+	url = git@github.com:CentroEPiaggio/mocap4ros2_qualisys.git
