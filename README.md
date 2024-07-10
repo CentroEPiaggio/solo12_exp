@@ -41,6 +41,10 @@ To launch the SOLO12 interface:
     ros2 launch solo12_sim interface_and_control.launch.py
     ```
 
+### Qualysis
+
+Check the [mocap4ros2_qualisys README](src/mocap4ros2_qualisys/README.md) for the Qualysis setup.
+
 ### Feed-Forward Commands Publisher
 
 This package publishes the robot's commands as a feed-forward control signal.
