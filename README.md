@@ -31,7 +31,7 @@ To launch the SOLO12 interface:
     ```shell
     sudo su
     ```
-3. Afterwards, source the ROS 2 workspace and launch the interface:
+3. Afterward, source the ROS 2 workspace and launch the interface:
     ```shell
     source install/setup.bash
     ros2 launch solo12_sim interface.launch.py
