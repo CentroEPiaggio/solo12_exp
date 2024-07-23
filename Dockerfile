@@ -71,6 +71,8 @@ RUN --mount=type=cache,sharing=locked,target=/var/cache/apt --mount=type=cache,s
 
 RUN pip3 install \
     matplotlib \
+    numpy \
+    pandas \
     # --break-system-packages \
     --upgrade
 
