@@ -64,7 +64,7 @@ ros2 bag record --use_sim_time /joint_states
     ```shell
     ros2 launch ff_commands_publisher visualize_solo.launch.py ["bag_filename:='<filename>'"] [rate:=<num>] [use_sim_time:=<true|false>]
     ```
-    The "<param_name>:='<param_value>'" is only required when the given filename is a number (e.g. 020) since we want it to be treated as a string.
+    The `<param_name>:='<param_value>` is only required when the given filename is a number (e.g. 020) since we want it to be treated as a string.
 - Publish the bag JointState messages in the topic `/joint_states`:
     ```shell
     ros2 launch ff_commands_publisher ff_commands_publisher_node.launch.py ["bag_filename:='<filename>'"]

@@ -27,7 +27,7 @@ helpFunction()
     echo ""
     echo "Usage: $0 [-r]"
     echo -e "\t-h   --help          Print the help."
-    echo -e "\t-r   --rebuild   Rebuild the image."
+    echo -e "\t-r   --rebuild       Rebuild the image."
     exit 1 # Exit script after printing help
 }
 

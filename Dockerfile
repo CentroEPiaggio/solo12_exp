@@ -72,7 +72,9 @@ RUN --mount=type=cache,sharing=locked,target=/var/cache/apt --mount=type=cache,s
 RUN pip3 install \
     matplotlib \
     numpy \
+    numpy-quaternion \
     pandas \
+    ros2-numpy \
     # --break-system-packages \
     --upgrade
 
