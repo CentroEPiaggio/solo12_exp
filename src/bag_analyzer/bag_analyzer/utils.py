@@ -1,6 +1,6 @@
 import numpy as np
 import quaternion
-from quaternion import quaternion
+
 
 
 def interp(x, xp, fp):
@@ -45,3 +45,21 @@ def quat2rpy(q):
             rpy = np.vstack((rpy, np.array([r, p, y])))
             
         return rpy
+    
+def quat_rot(q, v):
+    """
+    Rotate a three dimensional vector v with quaternion q.
+    
+    params
+    ----
+    q: quaternion
+    v: vector to be rotated
+    
+    return
+    ----
+    q * [0, v] * q.conj
+    """
+    
+    return quaternion.as_vector_part(
+        q * quaternion.from_vector_part(v) * q.conj()
+    )

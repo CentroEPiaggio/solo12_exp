@@ -21,7 +21,7 @@ from rosgraph_msgs.msg import Clock
 from std_msgs.msg import Float64MultiArray
 from sensor_msgs.msg import JointState
 
-from bag_analyzer.utils import interp, quat2rpy
+from bag_analyzer.utils import interp, quat2rpy, quat_rot
 
 
 
@@ -160,10 +160,13 @@ class BagAnalyzer():
                 for rigid_body in rigid_body_msg.rigidbodies:
                     if rigid_body.rigid_body_name == 'SOLO12':
                         time_mocap = np.concatenate((time_mocap, [time]))
-                        position = np.vstack((position, rnp.numpify(rigid_body.pose.position)))
                         
                         q = rigid_body.pose.orientation
-                        orientation = np.concatenate((orientation, [np.quaternion(q.w, q.x, q.y, q.z)]))
+                        quat = np.quaternion(q.w, q.x, q.y, q.z)
+                        orientation = np.concatenate((orientation, [quat]))
+                        
+                        pos = quat_rot(quat.conj(), rnp.numpify(rigid_body.pose.position))
+                        position = np.vstack((position, pos))
             
             # Save the measured joint positions and torques.
             if topic == '/joint_states':
@@ -348,7 +351,7 @@ class BagAnalyzer():
         
     def _compute_kpi(self, data: BagData, bag_filename: str):
         vel_ref = 0.1
-                
+        
         heading_rmse = np.sqrt(np.mean(
             (data.lin_velocity[:, 0] - vel_ref)**2
         ))
