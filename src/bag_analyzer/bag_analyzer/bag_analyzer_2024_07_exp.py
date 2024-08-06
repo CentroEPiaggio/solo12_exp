@@ -357,7 +357,10 @@ class BagAnalyzer():
         cot = ((data.position[-1, 0] - data.position[0, 0]) / data.time_mocap[-1]) \
             / np.mean(np.sum(data.torque**2, axis=1)**0.5)
         
-        yaw_drift = np.abs(data.rpy[-1, 2] - data.rpy[0, 2])
+        yaw_drift = min(
+            np.abs(data.rpy[-1, 2] - data.rpy[0, 2]),
+            2*np.pi - np.abs(data.rpy[-1, 2] - data.rpy[0, 2])
+        )
         
         self.kpi_df = pd.concat([
             self.kpi_df, pd.DataFrame({
