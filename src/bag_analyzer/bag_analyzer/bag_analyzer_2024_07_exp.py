@@ -1,9 +1,12 @@
 from dataclasses import dataclass
 import os
+import time
 
 from cycler import cycler
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
+import quaternion
 
 from ament_index_python.packages import get_package_share_directory
 import rclpy
@@ -17,19 +20,24 @@ from rosgraph_msgs.msg import Clock
 from std_msgs.msg import Float64MultiArray
 from sensor_msgs.msg import JointState
 
-from bag_analyzer.utils import interp
+from bag_analyzer.utils import interp, quat2rpy
 
 
 
 class BagAnalyzer():
+    """Class than analyze all the bags file, plot their data and compute the KPIs."""
+    
     @dataclass
     class BagData:
+        """Container for the data extracted from the bag file."""
+        
         time_joint_states: np.ndarray
         joint_pos: np.ndarray
         torque: np.ndarray
         time_mocap: np.ndarray
         position: np.ndarray
         orientation: np.ndarray
+        rpy: np.ndarray
         lin_velocity: np.ndarray
         time_commands: np.ndarray
         joint_pos_command: np.ndarray
@@ -38,12 +46,17 @@ class BagAnalyzer():
         package_share_directory = get_package_share_directory('bag_analyzer')
         self.bags_directory = f"{package_share_directory}/../../../../bags"
         
+        # Order with thich the joint data is stored.
         self.joint_names = [
             "LF_HAA", "LF_HFE", "LF_KFE",
             "RF_HAA", "RF_HFE", "RF_KFE",
             "LH_HAA", "LH_HFE", "LH_KFE",
             "RH_HAA", "RH_HFE", "RH_KFE",
         ]
+        
+        self.kpi_df = pd.DataFrame(columns=[
+            "Bag Name", "Heading RMSE", "CoT", "Yaw Drift"
+        ])
         
         np.seterr(divide='ignore', invalid='ignore')
         
@@ -53,7 +66,11 @@ class BagAnalyzer():
         bags = self.list_bag_files(self.bags_directory)
         
         for bag in bags:
-            self.analyze_bag(bag)
+            try:
+                self._analyze_bag(bag)
+            except Exception as e:
+                print(f"Error while analyzing the bag {bag}.")
+                print(e)
     
     @staticmethod
     def list_bag_files(directory: str) -> list[str]:
@@ -66,16 +83,21 @@ class BagAnalyzer():
                     bag_files.append(os.path.join(root, file))
         return bag_files
     
-    def analyze_bag(self, bag_file_path: str):
+    def _analyze_bag(self, bag_file_path: str):
+        """Analyze the data in the input bag file, plot the data, and save the KPIs."""
+        
         data = self._extract_data(bag_file_path)
         
         self._plot_data(data, bag_file_path)
         
         if not os.path.exists(f'{self.bags_directory}/csv'):
             os.makedirs(f'{self.bags_directory}/csv', exist_ok=True)
-        self._compute_kpi(data)
+        self._compute_kpi(data, bag_file_path.split('/')[-2])
+        self.kpi_df.to_csv(f"{self.bags_directory}/csv/kpi.csv", index=False)
     
     def _extract_data(self, bag_file_path: str):
+        # ========================== Initialization ========================== #
+        
         # Create the bag reader.
         reader = rosbag2_py.SequentialReader()
         storage_options: rosbag2_py.StorageOptions = rosbag2_py._storage.StorageOptions(
@@ -95,12 +117,13 @@ class BagAnalyzer():
         
         time_mocap = np.array([])
         position = np.zeros((0, 3))
-        orientation = np.zeros((0, 4))
+        orientation = np.array([])
         
         time_commands = np.array([])
         joint_pos_command = np.zeros((0, 12))
         
-        # Read the bag and save the data.
+        # ================== Read The Bag And Save The Data. ================= #
+        
         while reader.has_next():
             topic, data, _ = reader.read_next()
             
@@ -132,9 +155,11 @@ class BagAnalyzer():
                     if rigid_body.rigid_body_name == 'SOLO12':
                         time_mocap = np.concatenate((time_mocap, [time]))
                         position = np.vstack((position, rnp.numpify(rigid_body.pose.position)))
-                        orientation = np.vstack((orientation, rnp.numpify(rigid_body.pose.orientation)))
+                        
+                        q = rigid_body.pose.orientation
+                        orientation = np.concatenate((orientation, [np.quaternion(q.w, q.x, q.y, q.z)]))
             
-            # Save the commanded joint torques.
+            # Save the measured joint positions and torques.
             if topic == '/joint_states':
                 joint_state_msg: JointState = deserialize_message(data, JointState)
                 time_joint_states = np.concatenate((time_joint_states, [time]))
@@ -148,6 +173,7 @@ class BagAnalyzer():
                 joint_pos = np.vstack((joint_pos, pos_reordered))
                 torque = np.vstack((torque, torques_reordered))
                 
+            # Save the reference joint positions and torques.
             if topic == '/PD_control/command':
                 joint_state_msg: JointState = deserialize_message(data, JointState)
                 pos_reordered = np.array(joint_state_msg.position)
@@ -160,6 +186,8 @@ class BagAnalyzer():
                 joint_pos_command = np.vstack((joint_pos_command, pos_reordered))
                 
         # ============ Eliminate The Final Part Of The Experiment. =========== #
+        
+        # The final instants of the experiment need to be removed.
                 
         torque = torque[(time_joint_states <= final_time), :]
         joint_pos = joint_pos[(time_joint_states <= final_time), :]
@@ -170,13 +198,13 @@ class BagAnalyzer():
         joint_pos = joint_pos[0:len(time_joint_states), :]
         
         
-        position = position[time_mocap <= final_time]
-        orientation = position[time_mocap <= final_time]
+        position = position[time_mocap <= final_time, :]
+        orientation = orientation[time_mocap <= final_time]
         time_mocap = time_mocap[time_mocap <= final_time]
         
         time_mocap = np.unique(time_mocap)
         position = position[0:len(time_mocap), :]
-        orientation = orientation[0:len(time_mocap), :]
+        orientation = orientation[0:len(time_mocap)]
         
         
         joint_pos_command = joint_pos_command[time_commands <= final_time, :]
@@ -192,6 +220,8 @@ class BagAnalyzer():
             [np.gradient(position[:, i], time_mocap) for i in range(3)]
         ).transpose()
         
+        rpy = quat2rpy(orientation)
+        
         return self.BagData(
             time_joint_states=time_joint_states,
             joint_pos=joint_pos,
@@ -199,6 +229,7 @@ class BagAnalyzer():
             time_mocap=time_mocap,
             position=position,
             orientation=orientation,
+            rpy=rpy,
             lin_velocity=lin_velocity,
             time_commands=time_commands,
             joint_pos_command=joint_pos_command,
@@ -243,6 +274,7 @@ class BagAnalyzer():
         os.makedirs(fig_path, exist_ok=True)
         
         # ============= Position, Velocity, Orientation, Torques. ============ #
+        
         fig, axs = plt.subplots(2, 2, figsize=[2*x_size_def, 2*y_size_def], layout="constrained")
         
         for ax1 in axs:
@@ -255,7 +287,7 @@ class BagAnalyzer():
             ylabel='Position [m]',
             title='Base Position'
         )
-        axs[0, 1].legend(['x-axis', 'y-axis', 'z-axis'])
+        axs[0, 0].legend(['x-axis', 'y-axis', 'z-axis'])
         
         axs[0, 1].plot(data.time_mocap - data.time_joint_states[0], data.lin_velocity)
         axs[0, 1].set(
@@ -273,6 +305,7 @@ class BagAnalyzer():
         )
             
         plt.savefig(f"{fig_path}/mocap.svg", bbox_inches="tight", format='svg')
+        plt.close(fig)
         
         # ======================= Joint Position Errors ====================== #
         
@@ -307,22 +340,39 @@ class BagAnalyzer():
         plt.savefig(f"{fig_path}/joint_pos.svg", bbox_inches="tight", format='svg')
             
         
-    def _compute_kpi(self, data: BagData):
+    def _compute_kpi(self, data: BagData, bag_filename: str):
         vel_ref = 0.1
                 
         heading_rmse = np.sqrt(np.mean(
             (data.lin_velocity[:, 0] - vel_ref)**2
         ))
         
-        print(heading_rmse)
+        # CoT = (d_traveled / time) / (mean(torque^2))
+        cot = ((data.position[-1, 0] - data.position[0, 0]) / data.time_mocap[-1]) \
+            / np.mean(np.sum(data.torque**2, axis=1)**0.5)
+        
+        yaw_drift = np.abs(data.rpy[-1, 2] - data.rpy[0, 2])
+        
+        self.kpi_df = pd.concat([
+            self.kpi_df, pd.DataFrame({
+                "Bag Name": [bag_filename],
+                "Heading RMSE": [heading_rmse],
+                "CoT": [cot],
+                "Yaw Drift": [yaw_drift]
+            })
+        ])
 
 
 
 def main(args=None):
     rclpy.init(args=args)
     
+    start = time.time()
+    
     inspector = BagAnalyzer()
     inspector()
+    
+    print(f'It took {time.time()-start:.2f} seconds.')
     
     rclpy.shutdown()
 
