@@ -74,6 +74,7 @@ RUN pip3 install \
     numpy \
     numpy-quaternion \
     pandas \
+    progressbar2 \
     ros2-numpy \
     # --break-system-packages \
     --upgrade

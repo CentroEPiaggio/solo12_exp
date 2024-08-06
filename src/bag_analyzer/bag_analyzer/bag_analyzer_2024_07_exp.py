@@ -1,11 +1,12 @@
 from dataclasses import dataclass
+import logging
 import os
-import time
 
 from cycler import cycler
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import progressbar
 import quaternion
 
 from ament_index_python.packages import get_package_share_directory
@@ -64,13 +65,18 @@ class BagAnalyzer():
     
     def __call__(self):
         bags = self.list_bag_files(self.bags_directory)
-        
-        for bag in bags:
+
+        progressbar.streams.wrap_stderr()
+        logging.basicConfig()
+        for i in progressbar.progressbar(range(len(bags))):
+            bag = bags[i]
             try:
                 self._analyze_bag(bag)
             except Exception as e:
-                print(f"Error while analyzing the bag {bag}.")
-                print(e)
+                logging.error("Error while analyzing the bag %s.", bag)
+                # logging.error(e)
+                
+        self._compute_mean_kpi()
     
     @staticmethod
     def list_bag_files(directory: str) -> list[str]:
@@ -362,18 +368,25 @@ class BagAnalyzer():
             })
         ])
 
-
+    def _compute_mean_kpi(self):
+        """Compute the mean KPI over the repeated experiments."""
+        
+        df = self.kpi_df
+        
+        df['Bag Name'] = df['Bag Name'].apply(lambda s: s[20:])
+        
+        mean_kpi_df = df.groupby('Bag Name').mean().reset_index()
+        
+        mean_kpi_df.to_csv(f"{self.bags_directory}/csv/mean_kpi.csv", index=False)
+    
+    
 
 def main(args=None):
     rclpy.init(args=args)
-    
-    start = time.time()
-    
+        
     inspector = BagAnalyzer()
     inspector()
-    
-    print(f'It took {time.time()-start:.2f} seconds.')
-    
+        
     rclpy.shutdown()
 
 
