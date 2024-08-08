@@ -56,7 +56,7 @@ class BagAnalyzer():
         ]
         
         self.kpi_df = pd.DataFrame(columns=[
-            "Bag Name", "Heading RMSE", "CoT", "Yaw Drift"
+            "Bag Name", "Heading RMSE", "Lateral RMSE", "CoT", "Yaw Drift"
         ])
         
         np.seterr(divide='ignore', invalid='ignore')
@@ -356,6 +356,10 @@ class BagAnalyzer():
             (data.lin_velocity[:, 0] - vel_ref)**2
         ))
         
+        lateral_rmse = np.sqrt(np.mean(
+            (data.lin_velocity[:, 1] - 0)**2
+        ))
+        
         # CoT = (d_traveled / time) / (mean(torque^2))
         cot = ((data.position[-1, 0] - data.position[0, 0]) / data.time_mocap[-1]) \
             / np.mean(np.sum(data.torque**2, axis=1)**0.5)
@@ -369,6 +373,7 @@ class BagAnalyzer():
             self.kpi_df, pd.DataFrame({
                 "Bag Name": [bag_filename],
                 "Heading RMSE": [heading_rmse],
+                "Lateral RMSE": [lateral_rmse],
                 "CoT": [cot],
                 "Yaw Drift": [yaw_drift]
             })
