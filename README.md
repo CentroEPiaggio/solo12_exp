@@ -62,12 +62,14 @@ Check the [mocap4ros2_qualisys README](src/mocap4ros2_qualisys/README.md) for th
 
 This package publishes the robot's commands as a feed-forward control signal.
 To use it, record your bag files and put them in `src/ff_commands_publisher/bags/`.
-More detailed instructions are in the package's [README]((src/ff_commands_publisher/README.md)).
+More detailed instructions are in the package's [README](src/ff_commands_publisher/README.md).
 
 The bags should be recorded with
 ```shell
 ros2 bag record --use_sim_time /joint_states
 ```
+
+The syntax `[parameter_name:=parameter_value]` means that the parameter is optional. If you don't provide it, the default value will be used.
 
 - Inspect the bag file (plots the joint positions, velocities, and efforts):
     ```shell
@@ -75,12 +77,15 @@ ros2 bag record --use_sim_time /joint_states
     ```
 - Publish and visualize in RViz SOLO12 motion:
     ```shell
-    ros2 launch ff_commands_publisher visualize_solo.launch.py ["bag_filename:='<filename>'"] [rate:=<num>] [use_sim_time:=<true|false>]
+    ros2 launch ff_commands_publisher visualize_solo.launch.py ["bag_filename:='<filename>'"] [rate:=<float>] [topic_name:='</topic_name>'] [use_sim_time:=<true|false>]
     ```
-    The `<param_name>:='<param_value>` is only required when the given filename is a number (e.g. 020) since we want it to be treated as a string.
-- Publish the bag JointState messages in the topic `/joint_states`:
+    The outer "" in `"<param_name>:='<param_value>'"` are required only when the given filename is a number (e.g. 020), since we want it to be treated as a string.
+    - `"bag_filename:='<filename>'"`: select the bag to reproduce.
+    - `rate`: increase or reduce the execution speed.
+    - `topic_name`: remap `/joint_states` topic into another topic.
+- Publish the bag JointState messages in the topic `/PD_control/command` (for using the controller on the real robot):
     ```shell
-    ros2 launch ff_commands_publisher ff_commands_publisher_node.launch.py ["bag_filename:='<filename>'"]
+    ros2 launch ff_commands_publisher experiment_solo.launch.py ["bag_filename:='<filename>'"] [rate:=<float>]
     ```
 
 ### Feed-Forward Trajectory Simulation
