@@ -1,5 +1,18 @@
 # SOLO 12 Experiments
 
+## Overview
+
+This repository contains the necessary packages to run experiments with the SOLO12 robot.
+The main packages and their purposes are:
+- `ff_commands_publisher`: Publish the feed-forward commands from a bag file to the PD controller or visualize the trajectory in RViz.
+- `bag_analyzer`: Inspect the bag file before using them. Many assumptions regarding the topics present are made. If you do different experiments, you'll need to modify the code.
+- `robot_gazebo`: Launch the SOLO12 robot in Gazebo and exectute the feed-forward commands.
+
+This repository also contains packages for using the Qualysis motion capture system with ROS 2.
+
+To change the PD values of the controller of the real robot, modify `solo_12_gazebo.xacro` in the `solo_description` package.
+To change the PD values of the controller in the Gazebo simulation, modify the `solo12_controller_effort.yaml` file in the `robot_control` package.
+
 ## Installation
 
 Either use Docker or copy the `src` directory in your ROS 2 workspace. The repo has been tested in ROS 2 Humble.
