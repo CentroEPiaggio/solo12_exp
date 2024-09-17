@@ -196,7 +196,7 @@ def spawn_controllers(ld):
         name='ff_commands_publisher_node',
         parameters=[
             {'bag_filename': bag_filename},
-            {'rate': 1},
+            {'rate': 1.},
         ],
         shell=True,
         emulate_tty=True,
